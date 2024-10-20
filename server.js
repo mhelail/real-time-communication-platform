@@ -29,8 +29,8 @@ app.get('/', (req, res) => {
 
 // certificate and key files
 const sslOptions = {
-  key: fs.readFileSync('ssl/key.pem'),   // Replace with the path to your key file
-  cert: fs.readFileSync('ssl/cert.pem'), // Replace with the path to your certificate file
+  key: fs.readFileSync('ssl/key.pem'),   // the path to key file
+  cert: fs.readFileSync('ssl/cert.pem'), // path to certificate file
 };
 
 // HTTPS server
