@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time Chat</title>
+  <link rel="stylesheet" href="styles.css">
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: white;
+      color: black;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dark-mode {
+      background-color: #181818;
+      color: #ffffff;
+    }
+    #chat-container {
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
+      display: flex;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      background-color: #fff;
+      transition: background-color 0.3s;
+    }
+    .dark-mode #chat-container {
+      background-color: #242424;
+    }
+    #conversations {
+      width: 25%;
+      padding-right: 20px;
+      border-right: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    #conversations h3 {
+      margin-bottom: 10px;
+    }
+    #conversations input {
+      width: calc(100% - 10px);
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    #conversations-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      overflow-y: auto;
+      max-height: 400px;
+    }
+    #conversations-list li {
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+    #conversations-list li:hover {
+      background-color: #e0e0e0;
+    }
+    .dark-mode #conversations-list li:hover {
+      background-color: #3a3a3a;
+    }
+    #chat {
+      width: 75%;
+      padding-left: 20px;
+      box-sizing: border-box;
+    }
+    #messages {
+      border: 1px solid #ddd;
+      height: 300px;
+      overflow-y: scroll;
+      padding: 10px;
+      margin-bottom: 10px;
+      background-color: #fafafa;
+      border-radius: 5px;
+    }
+    .dark-mode #messages {
+      background-color: #333333;
+    }
+    #input-container {
+      display: flex;
+    }
+    #messageInput {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    #sendButton {
+      padding: 10px 20px;
+      margin-left: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #sendButton:hover {
+      background-color: #0056b3;
+    }
+    #toggleButton {
+      margin-top: 20px;
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #toggleButton:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <div id="conversations">
+      <h3>Conversations</h3>
+      <input id="searchInput" type="text" placeholder="Search users...">
+      <ul id="conversations-list">
+        <li id="noUsersFound" style="display:none;">No users found</li>
+      </ul>
+    </div>
+    <div id="chat">
+      <h2>Chatting with: <span id="chatWith">No one</span></h2>
+      <div id="messages"></div>
+      <div id="input-container">
+        <input id="messageInput" type="text" placeholder="Type your message here...">
+        <button id="sendButton" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+  <button id="toggleButton" onclick="toggleDarkMode()">Dark Mode</button>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  let selectedConversationId = null;
+  const socket = io();  // Create a socket.io instance
+  const token = localStorage.getItem('authToken');
+  const username = localStorage.getItem('username');
+
+  if (!token) {
+    alert('You need to login first.');
+    window.location.href = 'login.html';
+  }
+
+  // Ensure socket connects after user is authenticated
+  socket.emit('setUsername', username);
+
+  // Function to start a conversation
+  function startConversation(selectedUser) {
+    console.log("DEBUG: Attempting to start a conversation with:", selectedUser);
+    fetch('https://localhost:8443/api/auth/users/conversation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ username: selectedUser })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.conversationId) {
+        selectedConversationId = data.conversationId;
+        document.getElementById('chatWith').textContent = selectedUser;
+
+        // Emit a join event to socket.io to join this conversation room
+        socket.emit('joinConversation', selectedConversationId);
+        loadMessages(selectedConversationId);
+      } else {
+        console.error('DEBUG: Conversation data not found', data);
+      }
+    })
+    .catch(error => {
+      console.error('DEBUG: Error creating or finding conversation:', error);
+    });
+  }
+
+  // Function to load messages of a selected conversation
+  function loadMessages(conversationId) {
+    console.log("DEBUG: Loading messages for conversation ID:", conversationId);
+    fetch(`https://localhost:8443/api/auth/conversations/${conversationId}/messages`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      const messagesDiv = document.getElementById('messages');
+      messagesDiv.innerHTML = '';
+
+      if (data.messages) {
+        data.messages.forEach(msg => {
+          const messageElement = document.createElement('p');
+          messageElement.innerHTML = `<strong>${msg.from}:</strong> ${msg.content}`;
+          messagesDiv.appendChild(messageElement);
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      } else {
+        console.error('DEBUG: Messages data not found', data);
+      }
+    })
+    .catch(error => {
+      console.error('DEBUG: Error loading messages:', error);
+    });
+  }
+
+  // Send a message
+  function sendMessage() {
+  const messageInput = document.getElementById('messageInput');
+  const content = messageInput.value.trim();
+
+  if (!selectedConversationId) {
+    alert('Please select a conversation first.');
+    return;
+  }
+
+  if (content) {
+    const data = {
+      conversationId: selectedConversationId,
+      from: username,
+      content: content,
+    };
+
+    // Emit the message event through socket.io
+    socket.emit('message', data);
+
+    // Append the message to the chat immediately for the sender
+    const messagesDiv = document.getElementById('messages');
+    const newMessage = document.createElement('p');
+    newMessage.innerHTML = `<strong>${username}:</strong> ${content}`;
+    messagesDiv.appendChild(newMessage);
+    messageInput.value = '';
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+}
+  // Listen for incoming messages
+
+  // Set up click listeners for each conversation item
+  function setupConversations() {
+    const conversationItems = document.querySelectorAll('.conversation-item');
+    conversationItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const selectedUser = item.textContent.trim();
+        startConversation(selectedUser);
+      });
+    });
+  }
+  // Listen for incoming messages
+  socket.on('newMessage', (message) => {
+  if (message.conversationId === selectedConversationId) {
+    const messagesDiv = document.getElementById('messages');
+    const newMessage = document.createElement('p');
+    newMessage.innerHTML = `<strong>${message.from}:</strong> ${message.content}`;
+    messagesDiv.appendChild(newMessage);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+});
+
+  // Load conversations when the page is loaded
+  document.addEventListener("DOMContentLoaded", function () {
+    loadConversations();
+    setupSearch();
+  });
+
+  // Load user conversations
+  function loadConversations() {
+    fetch('https://localhost:8443/api/auth/users/conversations', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      const conversationsList = document.getElementById('conversations-list');
+      conversationsList.innerHTML = '';
+
+      if (data.conversations && data.conversations.length > 0) {
+        document.getElementById('noUsersFound').style.display = 'none';
+
+        data.conversations.forEach(conversation => {
+          const conversationItem = document.createElement('li');
+          conversationItem.textContent = conversation.username;
+          conversationItem.classList.add('conversation-item');
+          conversationsList.appendChild(conversationItem);
+        });
+
+        setupConversations();
+      } else {
+        document.getElementById('noUsersFound').style.display = 'block';
+      }
+    })
+    .catch(error => {
+      console.error('DEBUG: Error fetching conversations:', error);
+    });
+  }
+
+  // Set up search functionality
+  function setupSearch() {
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', function () {
+      const searchTerm = searchInput.value.trim();
+
+      if (searchTerm.length > 0) {
+        fetch(`https://localhost:8443/api/auth/users/search?username=${searchTerm}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          const conversationsList = document.getElementById('conversations-list');
+          conversationsList.innerHTML = '';
+
+          if (data.users && data.users.length > 0) {
+            data.users.forEach(user => {
+              const conversationItem = document.createElement('li');
+              conversationItem.textContent = user.username;
+              conversationItem.classList.add('conversation-item');
+              conversationsList.appendChild(conversationItem);
+            });
+
+            setupConversations();
+          } else {
+            const noUsersFound = document.createElement('li');
+            noUsersFound.textContent = 'No users found';
+            conversationsList.appendChild(noUsersFound);
+          }
+        })
+        .catch(error => {
+          console.error('DEBUG: Error searching for users:', error);
+        });
+      } else {
+        document.getElementById('conversations-list').innerHTML = '';
+      }
+    });
+  }
+
+  // Dark mode toggle
+  function toggleDarkMode() {
+    document.body.classList.toggle('dark-mode');
+    const toggleButton = document.getElementById('toggleButton');
+    if (document.body.classList.contains('dark-mode')) {
+      toggleButton.textContent = 'Light Mode';
+    } else {
+      toggleButton.textContent = 'Dark Mode';
+    }
+  }
+</script>
+
+</body>
+</html>
