@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Modern Real-Time Chat</title>
+  <style>
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: #fff;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.dark-mode {
+      background: #121212; 
+      color: #f0f0f0;
+    }
+    
+    #top-bar {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1); 
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: background-color 0.3s;
+    }
+    body.dark-mode #top-bar {
+      background: hsl(0, 2%, 10%); 
+    }
+    #top-bar .brand {
+      font-size: 1.2em;
+      font-weight: 600;
+      color: #fff; 
+    }
+    #top-bar .welcome {
+      font-size: 1em;
+      margin-right: 20px;
+      color: #fff; /* Beyaz renk */
+    }
+    #logoutButton {
+      background: #ff6a00; /* Turuncu renk */
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 15px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: background 0.3s;
+    }
+    #logoutButton:hover {
+      background: #e65c00; /* Turuncu hover rengi */
+    }
+
+    /* Chat Container */
+    #chat-container {
+      display: flex;
+      flex-direction: row;
+      max-width: 1200px;
+      margin: 20px auto;
+      background: rgba(255, 255, 255, 0.1); /* Hafif şeffaf beyaz */
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      transition: background-color 0.3s;
+      height: 80vh; /* Chat container yüksekliği */
+    }
+
+    /* Sidebar (Conversations) */
+    #conversations {
+      width: 30%;
+      background-color: rgba(44, 47, 51, 0.9); /* Hafif şeffaf koyu renk */
+      color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+    #conversations h3 {
+      color: #fff; /* Beyaz renk */
+      font-size: 1.5em;
+      margin-bottom: 15px;
+    }
+    #conversations input {
+      background-color: rgba(64, 68, 75, 0.9); /* Hafif şeffaf koyu renk */
+      color: #fff;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    #conversations-list {
+      list-style: none;
+      overflow-y: auto;
+      max-height: 500px;
+    }
+    #conversations-list li {
+      padding: 10px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-bottom: 5px;
+      position: relative;
+      background-color: rgba(255, 255, 255, 0.1); /* Hafif şeffaf beyaz */
+    }
+    #conversations-list li:hover {
+      background-color: #5865f2; /* Mavi hover rengi */
+    }
+    .conversation-item.unread::before {
+  content: '●';
+  color: #00aaff !important; /* Geçersiz kılmaları önlemek için önemli */
+  margin-right: 8px;
+  font-size: 1.5em;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+
+/* Hafif bir titreşim animasyonu */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+}
+
+    
+    #conversations-list .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #7289da; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1em;
+      flex-shrink: 0;
+    }
+    #noUsersFound {
+      text-align: center;
+      margin-top: 20px;
+      color: #bbb;
+    }
+
+    /* Chat Section */
+    #chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.1); 
+    }
+    #chat h2 {
+      font-size: 1.2em;
+      margin-bottom: 15px;
+      color: #fff; /* Beyaz renk */
+    }
+    #user-bar {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1); 
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: background-color 0.3s;
+    }
+    #call-icon {
+      border-radius: 25%;
+      background: #16aa22; 
+      font-size: 25px;
+      cursor: pointer;
+      border: none;
+      padding: 10px;
+      color: #fff; 
+    }
+    #call-icon:hover {
+      background: #14cc22; 
+    }
+    #messages {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1); 
+      border-radius: 10px;
+      overflow-y: auto; /* Mesajlar için kaydırma çubuğu */
+      margin-bottom: 15px;
+      border: 1px solid rgba(221, 221, 221, 0.1); /* Hafif şeffaf kenarlık */
+      max-height: calc(80vh - 200px); /* Mesajlar bölümünün maksimum yüksekliği */
+    }
+    .message {
+      padding: 15px;
+      border-radius: 15px;
+      margin-bottom: 15px;
+      font-size: 1em;
+      position: relative;
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+    .sent {
+      background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+      align-self: flex-end;
+      color: #000;
+    }
+    .received {
+      background: rgba(224, 224, 224, 0.1); /* Hafif şeffaf gri */
+      align-self: flex-start;
+      color: #fff; /* Beyaz renk */
+    }
+    .message .timestamp,
+    .message .status-badge {
+      font-size: 0.75em;
+      color: #393838;
+      text-align: right;
+      margin-top: 5px;
+      display: block;
+    }
+
+    /* Input and Buttons */
+    #input-container {
+      display: flex;
+      gap: 10px;
+    }
+    #messageInput {
+      flex: 1;
+      padding: 15px;
+      border-radius: 10px;
+      border: none;
+      background-color: rgba(233, 233, 233, 0.1); /* Hafif şeffaf gri */
+      font-size: 1em;
+      color: #fff; /* Beyaz renk */
+    }
+    #sendButton {
+      background: #ff6a00; /* Turuncu renk */
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 15px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.3s;
+    }
+    #sendButton:hover {
+      background: #e65c00; /* Turuncu hover rengi */
+    }
+
+
+    /* New Chat Modal */
+    #newChatModal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 25px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 245, 245, 0.95)); /* Hafif gradient */
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); /* Daha yumuşak gölge */
+  display: none;
+  max-width: 350px;
+  width: 100%;
+  z-index: 9999;
+  font-family: 'Arial', sans-serif; /* Modern bir font */
+}
+
+#newChatModal h3 {
+  margin-bottom: 20px;
+  font-weight: 700;
+  font-size: 1.2em;
+  color: #333; /* Koyu gri renk */
+  text-align: center; /* Ortalanmış başlık */
+  border-bottom: 2px solid #ff6a00;
+  padding-bottom: 10px;
+}
+
+#newChatModal input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: 1px solid #ff6a00;
+  background: #f9f9f9; /* Hafif açık gri */
+  font-size: 1em;
+  transition: border-color 0.3s;
+}
+
+#newChatModal input[type="text"]:focus {
+  border-color: #ff6a00; /* Odaklanıldığında turuncu çerçeve */
+  outline: none;
+}
+
+#newChatModal button {
+  padding: 12px 25px;
+  margin-right: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ff6a00, #e65c00); /* Gradient buton */
+  color: #fff;
+  transition: background 0.3s, transform 0.2s;
+}
+
+#newChatModal button:hover {
+  background: linear-gradient(135deg, #e65c00, #cc5200); /* Daha koyu hover rengi */
+  transform: scale(1.05); /* Hoverda hafif büyüme efekti */
+}
+
+#newChatModal #userList {
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fdfdfd; /* Hafif açık arka plan */
+}
+
+#newChatModal #userList li {
+  margin-bottom: 8px;
+  padding: 5px;
+  border-radius: 5px;
+  color: #333; /* Koyu gri yazı rengi */
+  background: #fff; /* Beyaz arka plan */
+  transition: background 0.3s, color 0.3s;
+}
+
+#newChatModal #userList li:hover {
+  background: rgba(255, 106, 0, 0.1); /* Hoverda hafif turuncu arka plan */
+  color: #ff6a00; /* Hoverda turuncu yazı rengi */
+}
+
+#newChatModal::-webkit-scrollbar {
+  width: 8px;
+}
+
+#newChatModal::-webkit-scrollbar-thumb {
+  background-color: #ff6a00;
+  border-radius: 4px;
+}
+
+
+    /* Floating Buttons */
+    #toggleButton,
+    #newChatButton,
+    #callHistoryButton {
+      position: fixed;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2em;
+      cursor: pointer;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      transition: background 0.3s, transform 0.3s;
+      background-color: #5865f2;
+      color: white;
+      z-index: 999;
+    }
+    #toggleButton {
+      bottom: 150px;
+    }
+    #newChatButton {
+      bottom: 80px;
+    }
+    #callHistoryButton {
+      bottom: 220px; /* Call History button position */
+    }
+    #toggleButton:hover,
+    #newChatButton:hover,
+    #callHistoryButton:hover {
+      background-color: #4752c4;
+      transform: translateY(-2px);
+    }
+    /* Caller Call Popup */
+    #callerCallPopup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      color: #333;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      z-index: 10000;
+      text-align: center;
+      width: 250px;
+    }
+    #callerCallPopup h2 {
+      margin-bottom: 10px;
+    }
+    #callerCallPopup p {
+      margin-bottom: 20px;
+    }
+    #callerCallPopup button {
+      background: #ff5c5c;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.3s;
+    }
+    #callerCallPopup button:hover {
+      background: #e04e4e;
+    }
+    /* Incoming Call Popup (Receiver) */
+    #incomingCallPopup {
+      display:none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      color: #333;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      z-index: 10000;
+      text-align: center;
+      width: 250px;
+    }
+    #incomingCallPopup h2 {
+      margin-bottom: 10px;
+    }
+    #incomingCallPopup p {
+      margin-bottom: 20px;
+    }
+    #incomingCallPopup button {
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      cursor: pointer;
+      font-size: 1em;
+      margin: 0 5px;
+      transition: background 0.3s;
+    }
+    #incomingCallPopup #acceptCallButton {
+      background: #4CAF50;
+      color: #fff;
+    }
+    #incomingCallPopup #acceptCallButton:hover {
+      background: #3d8b40;
+    }
+    #incomingCallPopup #declineCallButton {
+      background: #ff5c5c;
+      color: #fff;
+    }
+    #incomingCallPopup #declineCallButton:hover {
+      background: #e04e4e;
+    }
+    /* In-Call Info Popup */
+    #inCallInfo {
+      display:none;
+      position: fixed;
+      top: 50%;
+      left:50%;
+      transform: translate(-50%, -50%);
+      width:300px;
+      background: #2c2f33;
+      color:#fff;
+      padding:20px;
+      border-radius: 10px;
+      text-align:center;
+      z-index:10000;
+    }
+    #inCallInfo div {
+      margin-bottom: 20px;
+      font-size: 1.1em;
+    }
+    #endCallButtonInCall {
+      background:#ff5c5c;
+      color:#fff;
+      border:none;
+      border-radius:5px;
+      padding:10px 15px;
+      cursor:pointer;
+      font-size:1em;
+      transition: background 0.3s;
+    }
+    #endCallButtonInCall:hover {
+      background:#e04e4e;
+    }
+    #muteButton {
+      background: #ff5c5c;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 15px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.3s;
+      margin-right: 10px;
+    }
+    #muteButton:hover {
+      background: #ff5c5c;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.4);
+      padding-top: 60px;
+    }
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 600px;
+      border-radius: 10px;
+      max-height: 80vh;
+      overflow-y: auto; /* Scroll if needed */
+    }
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    #callHistoryList {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  background: #f9f9f9; /* Arka planı açık bir renge çekiyoruz */
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+#callHistoryList li {
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff; /* Her çağrı elemanı için arka plan */
+  transition: background 0.3s, transform 0.2s;
+}
+
+#callHistoryList li:last-child {
+  border-bottom: none;
+}
+
+#callHistoryList li:hover {
+  background: #f0f8ff; /* Hover sırasında açık mavi ton */
+  transform: scale(1.02); /* Hafif bir büyüme efekti */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.call-info {
+  display: flex;
+  flex-direction: column;
+  margin-left: 10px;
+  flex-grow: 1;
+}
+
+.call-info strong {
+  font-size: 16px;
+  margin-bottom: 5px;
+  color: #333; /* Daha iyi görünürlük için koyu renk */
+}
+
+.call-time, .call-status {
+  font-size: 12px;
+  color: #666;
+}
+
+.call-status.missed-call {
+  color: red;
+}
+
+.call-status.outgoing-call {
+  color: green;
+}
+
+.call-status.incoming-call {
+  color: #007bff;
+}
+
+.call-profile {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #4CAF50; /* Daha canlı bir yeşil */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  margin-right: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.call-profile:hover {
+  transform: scale(1.1); /* Profil resmine büyüme efekti */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.call-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  background-size: cover;
+}
+
+.call-icon.outgoing-call::before {
+  content: '📞';
+  color: green;
+}
+
+.call-icon.incoming-call::before {
+  content: '📲';
+  color: #007bff;
+}
+
+.call-icon.missed-call::before {
+  content: '❌';
+  color: red;
+}
+
+  </style>
+</head>
+<body>
+  <!-- Top Bar -->
+  <div id="top-bar">
+    <div class="brand">Real-Time Chat</div>
+    <div class="controls">
+      <span class="welcome">Welcome, <span id="username-display"></span>!</span>
+      <button id="logoutButton" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div id="chat-container">
+    <!-- Conversation List -->
+    <div id="conversations">
+      <h3>Conversations</h3>
+      <input id="searchInput" type="text" placeholder="Search users...">
+      <ul id="conversations-list">
+        <li id="noUsersFound" style="display:none;">No users found</li>
+      </ul>
+    </div>
+
+    <!-- Chat Section -->
+    <div id="chat">
+      <div id="user-bar">
+        <h2><span id="chatWith">No one</span></h2>
+        <button id="call-icon" onclick="startCall()">✆</button>
+      </div>
+      <div id="messages"></div>
+      <div id="input-container">
+        <input id="messageInput" type="text" placeholder="Type your message here...">
+        <button id="sendButton">Send</button>
+      </div>
+    </div>
+
+    <!-- Call History Modal -->
+    <div id="callHistoryModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3>Call History</h3>
+        <ul id="callHistoryList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Chat Modal -->
+  <div id="newChatModal">
+    <h3>Create a New Group</h3>
+    <input type="text" id="groupName" placeholder="Enter group name" />
+    <input type="text" id="searchUserInput" placeholder="Search users..." oninput="searchUsers()" />
+    <ul id="userList"></ul>
+    <button id="createGroupButton" onclick="createGroup()">Create</button>
+    <button onclick="closeNewChatModal()">Close</button>
+  </div>
+
+  <!-- Connection Status -->
+  <div id="connectionStatus"
+       style="display: none; position: fixed; top: 0; left: 0; right: 0; background: red; color: white; text-align: center; padding: 10px;">
+    Connection Issue! Check your network.
+  </div>
+
+  <!-- Floating Buttons -->
+  <div id="toggleButton" onclick="toggleDarkMode()">🌙</div>
+  <div id="newChatButton" onclick="openNewChatModal()">➕</div>
+  <button id="callHistoryButton">✆</button> <!-- Open call history modal -->
+
+  <!-- Caller Popup -->
+  <div id="callerCallPopup">
+    <h2 id="callerNameDisplay">Calling...</h2>
+    <p id="callerStatusText">Ringing...</p>
+    <button id="cancelCallerButton">Cancel</button>
+  </div>
+
+  <!-- Incoming Call Popup -->
+  <div id="incomingCallPopup">
+    <h2 id="incomingCallerName">Incoming call from ???</h2>
+    <p>Ringing...</p>
+    <div style="margin-top: 20px;">
+      <button id="acceptCallButton">Accept</button>
+      <button id="declineCallButton">Decline</button>
+    </div>
+  </div>
+
+  <!-- In-Call Info -->
+  <div id="inCallInfo">
+    <div>
+      In call with <span id="inCallWithName"></span> -
+      <span id="callTimer">00:00</span>
+    </div>
+    <button id="muteButton">Mute</button>
+    <button id="endCallButtonInCall">End Call</button>
+  </div>
+
+  <!-- Socket.io -->
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+
+  <!-- Main Script -->
+  <script>
+    let selectedConversationId = null;
+    let selectedConversationType = null;
+    let localStream = null;
+    let peerConnection = null;
+    let receivedOffer = null;
+    let callInterval = null;
+    let callStartTime = 0;
+    let currentCallUser = null;
+    let isMuted = false; // track local mute status
+
+    const token = localStorage.getItem('authToken');
+    const username = localStorage.getItem('username');
+    const socket = io('https://localhost:8443', { secure: true });
+
+    if (!token) {
+      alert('You need to login first.');
+      window.location.href = 'login.html';
+    }
+
+    // Display username in top bar
+    document.addEventListener("DOMContentLoaded", function () {
+      if (username) {
+        document.getElementById('username-display').textContent = username;
+      }
+    });
+
+    // On Connect
+    socket.on('connect', () => {
+      console.log('WebSocket connected successfully.');
+      socket.emit('setUsername', username);
+    });
+    socket.on('connect_error', (error) => {
+      console.error('WebSocket connection error:', error);
+    });
+
+    // Format time for call timer
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2,'0');
+      const s = (seconds % 60).toString().padStart(2,'0');
+      return m + ':' + s;
+    }
+
+    // Start call timer
+    function startCallTimer() {
+      callStartTime = Math.floor(Date.now() / 1000);
+      callInterval = setInterval(() => {
+        const now = Math.floor(Date.now() / 1000);
+        const elapsed = now - callStartTime;
+        document.getElementById('callTimer').textContent = formatTime(elapsed);
+      }, 1000);
+    }
+
+    // Stop call timer
+    function stopCallTimer() {
+      clearInterval(callInterval);
+      document.getElementById('callTimer').textContent = '00:00';
+    }
+
+    // Setup call history modal
+    document.addEventListener("DOMContentLoaded", function () {
+      loadConversations();
+      loadCallHistory(); // initial load
+
+      const sendButton = document.getElementById('sendButton');
+      sendButton.addEventListener('click', sendMessage);
+
+      // Buttons
+      const cancelCallButton = document.getElementById('cancelCallerButton');
+      const acceptCallButton = document.getElementById('acceptCallButton');
+      const declineCallButton = document.getElementById('declineCallButton');
+      const endCallButtonInCall = document.getElementById('endCallButtonInCall');
+      const callHistoryButton = document.getElementById('callHistoryButton');
+      const modal = document.getElementById('callHistoryModal');
+      const span = document.getElementsByClassName('close')[0];
+
+      // Call History Modal Events
+      callHistoryButton.onclick = function () {
+        modal.style.display = 'block';
+        loadCallHistory();
+      };
+      span.onclick = function () {
+        modal.style.display = 'none';
+      };
+      window.onclick = function (event) {
+        if (event.target == modal) {
+          modal.style.display = 'none';
+        }
+      };
+
+      // Cancel call
+      cancelCallButton.addEventListener('click', () => {
+        if (currentCallUser) {
+          socket.emit('callCancelled', { from: username, to: currentCallUser });
+        }
+        endCall();
+      });
+
+      // Accept call
+      acceptCallButton.addEventListener('click', () => {
+        if (!currentCallUser) return;
+        socket.emit('callAccepted', { from: username, to: currentCallUser });
+
+        document.getElementById('incomingCallPopup').style.display = 'none';
+
+        // If we had received an offer, set remote desc
+        if (receivedOffer) {
+          if (!peerConnection) {
+            peerConnection = new RTCPeerConnection(servers);
+            setupPeerConnection();
+          }
+
+          peerConnection.setRemoteDescription(new RTCSessionDescription(receivedOffer))
+            .then(() => {
+              return navigator.mediaDevices.getUserMedia({ audio: true });
+            })
+            .then(stream => {
+              localStream = stream;
+              localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+              });
+              return peerConnection.createAnswer();
+            })
+            .then(answer => {
+              return peerConnection.setLocalDescription(answer);
+            })
+            .then(() => {
+              socket.emit('answer', {
+                to: currentCallUser,
+                description: peerConnection.localDescription
+              });
+              document.getElementById('inCallWithName').textContent =
+                document.getElementById('chatWith').textContent || '...';
+              document.getElementById('inCallInfo').style.display = 'flex';
+              startCallTimer();
+            })
+            .catch(error => console.error('Error handling offer:', error));
+        }
+      });
+
+      // End call
+      endCallButtonInCall.addEventListener('click', () => {
+        if (currentCallUser) {
+          socket.emit('callEnded', { from: username, to: currentCallUser });
+        }
+        endCall();
+      });
+
+      // Setup search
+      setupSearch();
+
+      // Mute button
+      const muteButton = document.getElementById('muteButton');
+      muteButton.addEventListener('click', () => {
+        if (localStream) {
+          localStream.getAudioTracks().forEach(track => {
+            track.enabled = !track.enabled; // toggle
+          });
+          isMuted = !isMuted;
+          muteButton.textContent = isMuted ? 'Unmute' : 'Mute';
+          console.log(`Microphone is now ${isMuted ? 'muted' : 'unmuted'}`);
+
+          // Inform the other user (optional, if you want to show their status)
+          socket.emit('muteStatus', { from: username, isMuted });
+        }
+        else {
+          console.error('No localStream found to mute/unmute');
+        }
+      });
+    });
+
+    // Incoming call
+    socket.on('incomingCall', ({ from }) => {
+      currentCallUser = from;
+      document.getElementById('incomingCallerName').textContent =
+        'Incoming call from ' + from;
+      document.getElementById('incomingCallPopup').style.display = 'block';
+
+      // 30s timer for unanswered calls
+      const callTimer = setTimeout(() => {
+        if (currentCallUser === from) { // if still not answered
+          socket.emit('callMissed', { from, to: username });
+          document.getElementById('incomingCallPopup').style.display = 'none';
+          endCall();
+        }
+      }, 30000);
+
+      // If accepted, declined, or cancelled, clear the timer
+      socket.once('callAccepted', () => clearTimeout(callTimer));
+      socket.once('callDeclined', () => clearTimeout(callTimer));
+      socket.once('callCancelled', () => clearTimeout(callTimer));
+    });
+
+    // Call Missed
+    socket.on('callMissed', ({ from, to }) => {
+      if (username === from) {
+        alert(`Your call to ${to} was not answered and has been ended.`);
+        endCall();
+      }
+    });
+
+    // Call Ended
+    socket.on('callEnded', () => {
+      endCall();
+    });
+
+    // Call Accepted
+    socket.on('callAccepted', () => {
+      console.log('DEBUG: callAccepted event received.');
+      let inCallWithName = document.getElementById('chatWith').textContent;
+      if (inCallWithName === 'No one' || !inCallWithName) {
+        inCallWithName = currentCallUser || 'Unknown User';
+        document.getElementById('chatWith').textContent = inCallWithName;
+      }
+      document.getElementById('callerCallPopup').style.display = 'none';
+      document.getElementById('inCallWithName').textContent = inCallWithName;
+      document.getElementById('inCallInfo').style.display = 'flex';
+      startCallTimer();
+    });
+
+    // Call Declined
+    socket.on('callDeclined', ({ from, to }) => {
+      if (username === to) {
+        alert(`User ${from} declined your call.`);
+        document.getElementById('callerCallPopup').style.display = 'none';
+        endCall();
+      }
+    });
+
+    // Call Cancelled
+    socket.on('callCancelled', () => {
+      document.getElementById('incomingCallPopup').style.display = 'none';
+      document.getElementById('callerCallPopup').style.display = 'none';
+      currentCallUser = null;
+    });
+
+    // New incoming message
+    socket.on('newMessage', (message) => {
+      if (message.conversationId === selectedConversationId) {
+        const messagesDiv = document.getElementById('messages');
+        if (message.from === username) return; // avoid duplicating
+        const messageElement = createMessageElement(message, selectedConversationType);
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      } else {
+        const conversationItems =
+          document.querySelectorAll('#conversations-list li.conversation-item');
+        conversationItems.forEach(item => {
+          if (item.dataset.conversationId === message.conversationId) {
+            item.classList.add('unread');
+          }
+        });
+      }
+    });
+
+    // Status update (seen messages, etc.)
+    socket.on('statusUpdate', (updatedMessages) => {
+      const messagesDiv = document.getElementById('messages');
+      messagesDiv.innerHTML = '';
+      updatedMessages.forEach(msg => {
+        messagesDiv.appendChild(renderMessage(msg));
+      });
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    // Offer
+    socket.on('offer', description => {
+      receivedOffer = description;
+    });
+
+    // Answer
+    socket.on('answer', description => {
+      if (peerConnection) {
+        peerConnection.setRemoteDescription(new RTCSessionDescription(description))
+          .then(() => {
+            console.log('Remote description set for answer');
+          })
+          .catch(err => console.error('Error setting remote description:', err));
+      }
+    });
+
+    // ICE Candidate
+    socket.on('iceCandidate', candidate => {
+      if (peerConnection) {
+        peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+          .catch(error => console.error('Error adding ICE candidate:', error));
+      }
+    });
+
+    // Example STUN/TURN servers (replace with your own)
+    const servers = {
+      iceServers: [
+        
+        { urls: 'stun:ip:3478' },
+        // Example TURN (requires valid public IP / domain)
+        {
+          urls: 'turn:ip:3478',
+          username: 'user',
+          credential: 'passpword'
+        }
+      ]
+    };
+
+    // Set up peer connection
+    function setupPeerConnection() {
+      peerConnection.onicecandidate = event => {
+        if (event.candidate && currentCallUser) {
+          socket.emit('iceCandidate', {
+            to: currentCallUser,
+            candidate: event.candidate
+          });
+        }
+      };
+
+      // Modern approach: ontrack
+      peerConnection.ontrack = event => {
+        console.log('Received remote track:', event.streams);
+        const [remoteStream] = event.streams;
+        const audioElement = document.createElement('audio');
+        audioElement.srcObject = remoteStream;
+        audioElement.autoplay = true;
+        // Optional: audioElement.controls = true; // For debugging
+        document.body.appendChild(audioElement);
+      };
+
+      // Monitor connection state
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log(
+          `ICE connection state changed to: ${peerConnection.iceConnectionState}`
+        );
+        if (
+          peerConnection.iceConnectionState === 'disconnected' ||
+          peerConnection.iceConnectionState === 'failed' ||
+          peerConnection.iceConnectionState === 'closed'
+        ) {
+          alert('Connection lost! Ending call.');
+          endCall();
+        }
+      };
+      peerConnection.onconnectionstatechange = () => {
+        console.log(
+          `Connection state changed to: ${peerConnection.connectionState}`
+        );
+        if (
+          peerConnection.connectionState === 'disconnected' ||
+          peerConnection.connectionState === 'failed' ||
+          peerConnection.connectionState === 'closed'
+        ) {
+          alert('Connection problem. Ending call.');
+          endCall();
+        }
+      };
+    }
+
+    // Start call
+    function startCall() {
+      const calleeUsername = document.getElementById('chatWith').textContent;
+      if (calleeUsername === 'No one') {
+        alert('No user selected to call.');
+        return;
+      }
+      currentCallUser = calleeUsername;
+
+      // Show caller popup
+      document.getElementById('callerCallPopup').style.display = 'block';
+      document.getElementById('callerNameDisplay').textContent =
+        'Calling ' + calleeUsername;
+      document.getElementById('callerStatusText').textContent = 'Ringing...';
+
+      // Notify server
+      socket.emit('callInitiated', { from: username, to: calleeUsername });
+
+      // Access local mic
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          localStream = stream;
+          peerConnection = new RTCPeerConnection(servers);
+          setupPeerConnection();
+
+          // Add each track to peer connection
+          localStream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, localStream);
+          });
+
+          // Create offer
+          return peerConnection.createOffer();
+        })
+        .then(offer => {
+          // set local desc
+          return peerConnection.setLocalDescription(offer);
+        })
+        .then(() => {
+          if (currentCallUser) {
+            socket.emit('offer', {
+              to: currentCallUser,
+              description: peerConnection.localDescription
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error accessing media devices:', error);
+          document.getElementById('callerCallPopup').style.display = 'none';
+        });
+    }
+
+    // Peer disconnected
+    socket.on('peerDisconnected', ({ username }) => {
+      alert(`${username} disconnected! Ending call.`);
+      endCall();
+    });
+
+    // End call (cleanup)
+    function endCall() {
+      if (peerConnection) {
+        peerConnection.oniceconnectionstatechange = null;
+        peerConnection.onconnectionstatechange = null;
+        peerConnection.close();
+        peerConnection = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+
+      // Remove any remote audio elements
+      const audios = document.querySelectorAll('audio');
+      audios.forEach(a => {
+        if (a.srcObject && a !== document.querySelector('#localAudio')) {
+          a.srcObject = null;
+          a.remove();
+        }
+      });
+
+      // UI
+      document.getElementById('callerCallPopup').style.display = 'none';
+      document.getElementById('incomingCallPopup').style.display = 'none';
+      document.getElementById('inCallInfo').style.display = 'none';
+
+      stopCallTimer();
+
+      currentCallUser = null;
+      receivedOffer = null;
+    }
+
+    // Call history updated
+    socket.on('callHistoryUpdated', () => {
+      loadCallHistory();
+    });
+
+    // Load call history
+    function loadCallHistory() {
+      const token = localStorage.getItem('authToken');
+      const currentUser = localStorage.getItem('username');
+      fetch('https://localhost:8443/api/auth/call-history', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(response => response.json())
+        .then(data => {
+          const callHistoryList = document.getElementById('callHistoryList');
+          callHistoryList.innerHTML = '';
+          if (!data.callHistory) return;
+
+          data.callHistory.forEach(call => {
+            const callItem = document.createElement('li');
+            const callStatusClass = call.status === 'missed'
+              ? 'missed-call'
+              : (call.caller === currentUser
+                ? 'outgoing-call'
+                : 'incoming-call');
+
+            let contactName, profileInitial;
+
+            // If current user is the caller, show the receiver’s name, else the caller
+            if (call.caller === currentUser) {
+              contactName = call.receiver;
+              profileInitial = call.receiver.charAt(0).toUpperCase();
+            } else {
+              contactName = call.caller;
+              profileInitial = call.caller.charAt(0).toUpperCase();
+            }
+
+            const profileIcon = `<div class="call-profile">${profileInitial}</div>`;
+            const callIcon = `<span class="call-icon ${callStatusClass}"></span>`;
+            callItem.innerHTML = `
+              ${profileIcon}
+              <div class="call-info">
+                <strong>${contactName}</strong>
+                <div class="call-time">
+                  ${new Date(call.startTime).toLocaleString()}
+                </div>
+                <div class="call-status ${callStatusClass}">
+                  ${call.status}
+                </div>
+              </div>
+              ${callIcon}
+            `;
+            callHistoryList.appendChild(callItem);
+          });
+        })
+        .catch(error => console.error('Error fetching call history:', error));
+    }
+
+    // Load conversations
+    function loadConversations() {
+      const token = localStorage.getItem('authToken');
+      fetch('https://localhost:8443/api/auth/users/conversations', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(response => response.json())
+        .then(data => {
+          const conversationsList = document.getElementById('conversations-list');
+          conversationsList.innerHTML = '';
+
+          if (data.conversations && data.conversations.length > 0) {
+            data.conversations.forEach(conversation => {
+              const listItem = document.createElement('li');
+              listItem.classList.add('conversation-item');
+              listItem.dataset.conversationId = conversation._id || conversation.conversationId;
+
+              let label = '';
+              let otherUser = null;
+
+              if (conversation.type === 'group') {
+                label = conversation.name || 'Unnamed Group';
+                listItem.addEventListener('click', () =>
+                  startConversationWithGroup(
+                    conversation._id || conversation.conversationId,
+                    conversation.name
+                  )
+                );
+              } else {
+                // private chat
+                // Some backends store `conversation.username`, others store differently
+                // Adjust as needed:
+                otherUser = conversation.username || conversation.participants.find(p => p !== username);
+                label = otherUser;
+                listItem.addEventListener('click', () => startConversation(otherUser));
+              }
+
+              listItem.textContent = label;
+
+              const avatarDiv = document.createElement('div');
+              avatarDiv.classList.add('avatar');
+              if (conversation.type === 'group') {
+                avatarDiv.textContent = conversation.name
+                  ? conversation.name.charAt(0).toUpperCase()
+                  : 'G';
+              } else {
+                avatarDiv.textContent = otherUser
+                  ? otherUser.charAt(0).toUpperCase()
+                  : 'U';
+              }
+              listItem.insertBefore(avatarDiv, listItem.firstChild);
+              conversationsList.appendChild(listItem);
+            });
+          } else {
+            const noUsersFound = document.createElement('li');
+            noUsersFound.textContent = 'No Conversations Found';
+            conversationsList.appendChild(noUsersFound);
+          }
+        })
+        .catch(error => console.error('Error fetching conversations:', error));
+    }
+
+    // Start conversation (private)
+    function startConversation(selectedUser) {
+      const token = localStorage.getItem('authToken');
+      const from = localStorage.getItem('username');
+
+      if (!from || !selectedUser) {
+        alert("Please refresh and select a conversation.");
+        return;
+      }
+
+      fetch('https://localhost:8443/api/auth/users/conversation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ username: selectedUser })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.conversationId) {
+            selectedConversationId = data.conversationId;
+            selectedConversationType = 'private';
+            document.getElementById('chatWith').textContent = selectedUser;
+
+            const conversationItems = document.querySelectorAll(
+              '#conversations-list li.conversation-item'
+            );
+            conversationItems.forEach(item => {
+              if (item.dataset.conversationId === selectedConversationId) {
+                item.classList.remove('unread');
+              }
+            });
+
+            socket.emit('joinConversation', selectedConversationId);
+            loadMessages(selectedConversationId);
+          } else {
+            console.error('Conversation creation failed:', data);
+          }
+        })
+        .catch(error => {
+          console.error('Error creating or finding conversation:', error);
+          alert('Error starting the conversation. Please try again.');
+        });
+    }
+
+    // Load messages
+    function loadMessages(conversationId) {
+      const token = localStorage.getItem('authToken');
+      fetch('https://localhost:8443/api/auth/conversations/' + conversationId + '/messages', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(response => response.json())
+        .then(data => {
+          const messagesDiv = document.getElementById('messages');
+          messagesDiv.innerHTML = '';
+          if (data.messages) {
+            data.messages.forEach(msg => {
+              messagesDiv.appendChild(renderMessage(msg));
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+          }
+        })
+        .catch(error => console.error('Error loading messages:', error));
+    }
+
+    // Render message
+    function renderMessage(msg) {
+      return createMessageElement(msg, selectedConversationType);
+    }
+
+    // Create message element
+    function createMessageElement(msg, conversationType) {
+      const messageElement = document.createElement('div');
+      messageElement.className = msg.from === localStorage.getItem('username')
+        ? 'message sent'
+        : 'message received';
+
+      if (conversationType === 'group') {
+        const usernameElement = document.createElement('span');
+        usernameElement.className = 'username';
+        usernameElement.textContent = msg.from;
+        messageElement.appendChild(usernameElement);
+      }
+
+      const messageContent = document.createElement('div');
+      messageContent.className = 'message-content';
+      messageContent.textContent = msg.content;
+      messageElement.appendChild(messageContent);
+
+      const timestampElement = document.createElement('div');
+      timestampElement.className = 'timestamp';
+      const date = new Date(msg.timestamp);
+      timestampElement.textContent = date.toLocaleString('tr-TR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      messageElement.appendChild(timestampElement);
+
+      const statusElement = document.createElement('div');
+      statusElement.className = 'status-badge';
+
+      if (conversationType === 'private') {
+        statusElement.textContent =
+          msg.status === 'görüldü' ? 'Görüldü' : 'Teslim Edildi';
+      } else {
+        // group
+        if (msg.seenBy && msg.seenBy.includes(localStorage.getItem('username'))) {
+          statusElement.textContent = 'Görüldü';
+        } else {
+          statusElement.textContent = 'Okunmamış';
+        }
+      }
+      messageElement.appendChild(statusElement);
+
+      return messageElement;
+    }
+
+    // Start group conversation
+    function startConversationWithGroup(groupId, groupName) {
+      selectedConversationId = groupId;
+      selectedConversationType = 'group';
+
+      if (!groupId) {
+        alert("Group ID is missing.");
+        return;
+      }
+
+      const conversationItems = document.querySelectorAll(
+        '#conversations-list li.conversation-item'
+      );
+      conversationItems.forEach(item => {
+        if (item.dataset.conversationId === selectedConversationId) {
+          item.classList.remove('unread');
+        }
+      });
+
+      socket.emit('joinConversation', groupId);
+
+      const token = localStorage.getItem('authToken');
+      fetch('https://localhost:8443/api/auth/groups/' + groupId + '/messages', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.messages) {
+            document.getElementById('chatWith').textContent = groupName || 'Unnamed Group';
+            loadGroupMessages(groupId);
+          }
+        })
+        .catch(error => {
+          console.error('Error starting group conversation:', error);
+          alert('Error starting the group conversation.');
+        });
+    }
+
+    // Load group messages
+    function loadGroupMessages(groupId) {
+      const token = localStorage.getItem('authToken');
+      fetch('https://localhost:8443/api/auth/groups/' + groupId + '/messages', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(response => response.json())
+        .then(data => {
+          const messagesDiv = document.getElementById('messages');
+          messagesDiv.innerHTML = '';
+          if (data.messages) {
+            data.messages.forEach(msg => {
+              const messageElement = renderMessage(msg);
+              messagesDiv.appendChild(messageElement);
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+          }
+        })
+        .catch(error => {
+          console.error('Error loading group messages:', error);
+          alert('Error loading group messages.');
+        });
+    }
+
+    // Logout
+    function logout() {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('username');
+      window.location.href = 'login.html';
+    }
+
+    // Setup search
+    function setupSearch() {
+      const searchInput = document.getElementById('searchInput');
+      const token = localStorage.getItem('authToken');
+
+      searchInput.addEventListener('input', function () {
+        const searchTerm = searchInput.value.trim();
+        if (searchTerm.length > 0) {
+          fetch('https://localhost:8443/api/auth/users/search?username=' + searchTerm, {
+            headers: {
+              'Authorization': 'Bearer ' + token
+            }
+          })
+            .then(response => response.json())
+            .then(data => {
+              const conversationsList = document.getElementById('conversations-list');
+              conversationsList.innerHTML = '';
+
+              const conversationIds = new Set();
+
+              if (
+                (data.users && data.users.length > 0) ||
+                (data.groups && data.groups.length > 0)
+              ) {
+                if (data.users && data.users.length > 0) {
+                  data.users.forEach(user => {
+                    if (conversationIds.has(user._id)) return;
+                    conversationIds.add(user._id);
+                    const conversationItem = document.createElement('li');
+                    conversationItem.textContent = user.username || 'Unnamed User';
+                    conversationItem.classList.add('conversation-item');
+                    conversationItem.addEventListener('click', () =>
+                      startConversation(user.username)
+                    );
+                    conversationsList.appendChild(conversationItem);
+                  });
+                }
+                if (data.groups && data.groups.length > 0) {
+                  data.groups.forEach(group => {
+                    if (conversationIds.has(group._id)) return;
+                    conversationIds.add(group._id);
+                    const conversationItem = document.createElement('li');
+                    conversationItem.textContent = group.name
+                      ? 'Group: ' + group.name
+                      : 'Unnamed Group';
+                    conversationItem.classList.add('conversation-item');
+                    conversationItem.addEventListener('click', () =>
+                      startConversationWithGroup(group._id, group.name)
+                    );
+                    conversationsList.appendChild(conversationItem);
+                  });
+                }
+              } else {
+                const noUsersFound = document.createElement('li');
+                noUsersFound.textContent = 'No users or groups found';
+                conversationsList.appendChild(noUsersFound);
+              }
+            })
+            .catch(error => {
+              console.error('Error searching for users/groups:', error);
+            });
+        } else {
+          loadConversations();
+        }
+      });
+    }
+
+    // Group creation
+    let selectedUsers = new Set();
+    function openNewChatModal() {
+      document.getElementById('newChatModal').style.display = 'block';
+      document.getElementById('userList').innerHTML = '';
+      loadUsersForGroup();
+    }
+    function closeNewChatModal() {
+      document.getElementById('newChatModal').style.display = 'none';
+      selectedUsers.clear();
+    }
+    function loadUsersForGroup() {
+      const token = localStorage.getItem('authToken');
+      fetch('https://localhost:8443/api/auth/users', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(response => response.json())
+        .then(data => {
+          const userList = document.getElementById('userList');
+          userList.innerHTML = '';
+          if (data.users && Array.isArray(data.users)) {
+            data.users.forEach(user => {
+              if (user.username !== localStorage.getItem('username')) {
+                const listItem = document.createElement('li');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = user.username;
+                if (selectedUsers.has(user.username)) checkbox.checked = true;
+
+                checkbox.addEventListener('change', function() {
+                  if (this.checked) {
+                    selectedUsers.add(this.value);
+                  } else {
+                    selectedUsers.delete(this.value);
+                  }
+                });
+                listItem.appendChild(checkbox);
+                listItem.appendChild(document.createTextNode(user.username));
+                userList.appendChild(listItem);
+              }
+            });
+          } else {
+            userList.innerHTML = '<li>No users found</li>';
+          }
+        })
+        .catch(error => console.error('Error loading users:', error));
+    }
+    function searchUsers() {
+      const searchTerm = document.getElementById('searchUserInput').value.trim();
+      const token = localStorage.getItem('authToken');
+      const currentUser = localStorage.getItem('username');
+      if (searchTerm === '') {
+        loadUsersForGroup();
+        return;
+      }
+      fetch('https://localhost:8443/api/auth/users/search?username=' + searchTerm, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+        .then(response => response.json())
+        .then(data => {
+          const userList = document.getElementById('userList');
+          userList.innerHTML = '';
+          if (data.users && data.users.length > 0 && searchTerm.toLowerCase() !== currentUser.toLowerCase()) {
+            data.users.forEach(user => {
+              if (user.username !== currentUser) {
+                const listItem = document.createElement('li');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = user.username;
+                if (selectedUsers.has(user.username)) checkbox.checked = true;
+                checkbox.addEventListener('change', function() {
+                  if (this.checked) {
+                    selectedUsers.add(this.value);
+                  } else {
+                    selectedUsers.delete(this.value);
+                  }
+                });
+                listItem.appendChild(checkbox);
+                listItem.appendChild(document.createTextNode(user.username));
+                userList.appendChild(listItem);
+              }
+            });
+          } else {
+            userList.innerHTML = '<li>No users found</li>';
+          }
+        })
+        .catch(error => console.error('Error searching for users:', error));
+    }
+    function createGroup() {
+      if (selectedUsers.size < 2) {
+        alert('Select at least two users for a group.');
+        return;
+      }
+      const groupName = document.getElementById('groupName').value.trim();
+      if (!groupName) {
+        alert('Enter a group name.');
+        return;
+      }
+      const token = localStorage.getItem('authToken');
+      const currentUser = localStorage.getItem('username');
+      fetch('https://localhost:8443/api/auth/groups', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({
+          groupName,
+          members: [currentUser, ...Array.from(selectedUsers)]
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.groupId) {
+            alert('Group created successfully.');
+            closeNewChatModal();
+            loadConversations();
+          } else {
+            console.error('Group creation failed:', data);
+            alert('Failed to create group.');
+          }
+        })
+        .catch(error => console.error('Error creating group:', error));
+    }
+
+    // Dark Mode
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+      const toggleButton = document.getElementById('toggleButton');
+      toggleButton.textContent = document.body.classList.contains('dark-mode')
+        ? 'Light Mode'
+        : 'Dark Mode';
+    }
+
+    // Connection Status
+    function updateConnectionStatus() {
+      const connectionStatusDiv = document.getElementById('connectionStatus');
+      if (!navigator.onLine) {
+        alert('No internet! Ending call.');
+        endCall();
+        connectionStatusDiv.style.display = 'block';
+      } else {
+        connectionStatusDiv.style.display = 'none';
+      }
+    }
+    document.addEventListener("DOMContentLoaded", function () {
+      updateConnectionStatus();
+      window.addEventListener('online', updateConnectionStatus);
+      window.addEventListener('offline', updateConnectionStatus);
+    });
+
+    // Send message
+    function sendMessage() {
+      const content = document.getElementById('messageInput').value.trim();
+      const conversationId = selectedConversationId;
+      if (!conversationId) {
+        alert("No conversation selected.");
+        return;
+      }
+      if (!content) {
+        alert("Message cannot be empty.");
+        return;
+      }
+      const from = localStorage.getItem('username');
+      const timestamp = new Date().toISOString();
+      const data = { conversationId, from, content, timestamp };
+      socket.emit('message', data);
+
+      document.getElementById('messageInput').value = '';
+      const messagesDiv = document.getElementById('messages');
+      const messageElement = document.createElement('div');
+      messageElement.className = 'message sent';
+
+      const messageContent = document.createElement('div');
+      messageContent.className = 'message-content';
+      messageContent.textContent = content;
+      messageElement.appendChild(messageContent);
+
+      const timestampElement = document.createElement('div');
+      timestampElement.className = 'timestamp';
+      timestampElement.textContent = new Date(timestamp).toLocaleTimeString();
+      messageElement.appendChild(timestampElement);
+
+      messagesDiv.appendChild(messageElement);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+  </script>
+</body>
+</html>
