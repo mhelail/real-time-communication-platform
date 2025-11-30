@@ -82,7 +82,7 @@ The goal of the project is to let users create accounts, chat in private or in g
 
 
 
-3\.Create a .env file in the project root with at least:
+3\. Create a .env file in the project root with at least:
 
 
 
@@ -96,7 +96,7 @@ The goal of the project is to let users create accounts, chat in private or in g
 
 
 
-4\.Start the server:
+4\. Start the server:
 
 
 
@@ -106,7 +106,7 @@ The goal of the project is to let users create accounts, chat in private or in g
 
 
 
-5\.Open the app in your browser:
+5\. Open the app in your browser:
 
 
 
