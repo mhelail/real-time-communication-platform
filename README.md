@@ -53,7 +53,7 @@ Users can register, log in, chat one-to-one or in groups, and make basic voice c
    ```bash
    npm start
    ```
-or:
+   or:
    ```bash
    node app.js
    ```
