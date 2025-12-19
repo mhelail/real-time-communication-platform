@@ -51,7 +51,7 @@
     }
 
     button {
-      width: 200px;
+      width: 100%;
       padding: 15px;
       background: #ff6a00;
       border: none;
@@ -60,11 +60,18 @@
       font-size: 16px;
       cursor: pointer;
       transition: background 0.3s ease, transform 0.2s ease;
+      display: block;
     }
 
     button:hover {
       background: #e65c00;
       transform: scale(1.05);
+    }
+
+    a {
+      text-decoration: none;
+      display: block;
+      width: 200px;
     }
 
     .images-container {
@@ -155,8 +162,12 @@
     <h1>Welcome to Message App</h1>
     <p>Stay connected with friends and family.</p>
     <div class="buttons">
-      <button onclick="navigateTo('login.html')">Login</button>
-      <button onclick="navigateTo('register.html')">Sign Up</button>
+      <a href="/login.html" style="text-decoration: none; width: 200px; display: block;">
+        <button>Login</button>
+      </a>
+      <a href="/register.html" style="text-decoration: none; width: 200px; display: block;">
+        <button>Sign Up</button>
+      </a>
     </div>
   </div>
 

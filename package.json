@@ -1,20 +1,37 @@
 {
-  "name": "mesajlasma_platformu",
+  "name": "real-time-communication-platform",
   "version": "1.0.0",
-  "description": "",
+  "description": "A modern real-time chat and voice call application with WebRTC support",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "dev": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "chat",
+    "messaging",
+    "webrtc",
+    "socket.io",
+    "real-time",
+    "communication"
+  ],
   "author": "",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mhelail/real-time-communication-platform.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mhelail/real-time-communication-platform/issues"
+  },
+  "homepage": "https://github.com/mhelail/real-time-communication-platform#readme",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "express-rate-limit": "^8.2.1",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.2",

@@ -143,7 +143,7 @@
     <h2>Login to Your Account</h2>
     <input id="username" type="text" placeholder="Username">
     <input id="password" type="password" placeholder="Password">
-    <button onclick="login()">Login</button>
+    <button id="loginButton">Login</button>
     <div id="alert" class="alert"></div>
     <div class="register-link">
       Don't have an account? <a href="register.html">Register here</a>
@@ -172,19 +172,37 @@
               localStorage.setItem('username', username);
               alertBox.textContent = 'Login successful! Redirecting...';
               setTimeout(() => {
-                window.location.href = 'chat.html';
+                window.location.href = '/chat';
               }, 2000);
             } else {
               alertBox.textContent = data.message || 'Login failed. Please try again.';
             }
           })
-          .catch(() => {
+          .catch((error) => {
             alertBox.textContent = 'An error occurred. Please try again later.';
           });
       } else {
         alertBox.textContent = 'Please fill in all fields.';
       }
     }
+
+    // Set up event listeners when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginButton = document.getElementById('loginButton');
+      if (loginButton) {
+        loginButton.addEventListener('click', login);
+      }
+
+      // Allow form submission with Enter key
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        input.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            login();
+          }
+        });
+      });
+    });
   </script>
 </body>
 </html>

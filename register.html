@@ -108,9 +108,14 @@
       transition: transform 0.3s, background 0.3s;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       transform: translateY(-2px);
       background: #e65c00;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .alert {
@@ -141,10 +146,10 @@
   <div class="register-container">
     <img src="https://img.icons8.com/clouds/100/000000/add-user-male.png" alt="Register Icon">
     <h2>Create an Account</h2>
-    <input id="username" type="text" placeholder="Username">
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <button onclick="register()">Sign Up</button>
+    <input id="username" type="text" placeholder="Username" required>
+    <input id="email" type="email" placeholder="Email (optional)">
+    <input id="password" type="password" placeholder="Password" required>
+    <button id="signUpButton">Sign Up</button>
     <div id="alert" class="alert"></div>
     <div class="login-link">
       Already have an account? <a href="login.html">Login here</a>
@@ -156,34 +161,108 @@
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
       const alertBox = document.getElementById('alert');
+      const button = document.querySelector('button');
+      
+      // Clear previous alerts
       alertBox.textContent = '';
+      alertBox.style.color = '#ff4d4d';
 
-      if (username && email && password) {
-        fetch('https://localhost:8443/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ username, email, password }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.message === 'User registered successfully') {
-              alertBox.textContent = 'User successfully registered! Redirecting to login page...';
-              setTimeout(() => {
-                window.location.href = 'login.html';
-              }, 2000);
-            } else {
-              alertBox.textContent = data.message || 'Registration failed.';
-            }
-          })
-          .catch(() => {
-            alertBox.textContent = 'An error occurred. Please try again later.';
-          });
-      } else {
-        alertBox.textContent = 'Please fill in all fields.';
+      // Validation
+      if (!username || !password) {
+        alertBox.textContent = 'Please fill in username and password fields.';
+        return;
       }
+
+      if (username.length < 3) {
+        alertBox.textContent = 'Username must be at least 3 characters long.';
+        return;
+      }
+
+      if (password.length < 6) {
+        alertBox.textContent = 'Password must be at least 6 characters long.';
+        return;
+      }
+
+      // Disable button during request
+      button.disabled = true;
+      button.textContent = 'Signing Up...';
+      alertBox.textContent = 'Processing...';
+      alertBox.style.color = '#2575fc';
+
+      // Note: Backend only requires username and password, email is optional
+      
+      // Make sure username is within limits
+      if (username.length > 20) {
+        alertBox.textContent = 'Username must be less than 20 characters.';
+        alertBox.style.color = '#ff4d4d';
+        button.disabled = false;
+        button.textContent = 'Sign Up';
+        return;
+      }
+      
+      fetch('https://localhost:8443/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }), // Backend doesn't use email
+        mode: 'cors', // Explicitly set CORS mode
+        credentials: 'omit' // Don't send credentials for registration
+      })
+        .then(async (response) => {
+          let data;
+          try {
+            data = await response.json();
+          } catch (e) {
+            throw new Error('Invalid server response');
+          }
+          
+          if (response.ok && (data.success || data.message === 'User registered successfully')) {
+            alertBox.textContent = 'User successfully registered! Redirecting to login page...';
+            alertBox.style.color = '#4CAF50';
+            setTimeout(() => {
+              window.location.href = '/login.html';
+            }, 2000);
+          } else {
+            const errorMsg = data.message || data.errors?.join(', ') || 'Registration failed.';
+            alertBox.textContent = errorMsg;
+            alertBox.style.color = '#ff4d4d';
+            button.disabled = false;
+            button.textContent = 'Sign Up';
+          }
+        })
+        .catch((error) => {
+          let errorMsg = 'Connection error. ';
+          if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            errorMsg += 'Cannot connect to server. Make sure the server is running on https://localhost:8443';
+          } else {
+            errorMsg += error.message || 'Please check if the server is running and try again.';
+          }
+          alertBox.textContent = errorMsg;
+          alertBox.style.color = '#ff4d4d';
+          button.disabled = false;
+          button.textContent = 'Sign Up';
+        });
     }
+
+    // Set up event listeners when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Attach click handler to button
+      const signUpButton = document.getElementById('signUpButton');
+      if (signUpButton) {
+        signUpButton.addEventListener('click', register);
+      }
+
+      // Allow form submission with Enter key
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        input.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            register();
+          }
+        });
+      });
+    });
   </script>
 </body>
 </html>

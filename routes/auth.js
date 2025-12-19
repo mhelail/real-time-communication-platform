@@ -14,45 +14,48 @@ const {
   createGroup,
   sendGroupMessage,
   getCallHistory
-} = require('../controllers/authController'); // Controller'ları içe aktar
-const authenticateToken = require('../controllers/authenticationToken'); // Kimlik doğrulama için Middleware
+} = require('../controllers/authController');
+const authenticateToken = require('../controllers/authenticationToken');
+const { validateRegister, validateLogin, validateMessage, validateGroup } = require('../middleware/validator');
+const { authLimiter, apiLimiter } = require('../middleware/rateLimiter');
 
-// Kullanıcı kaydı
-router.post('/register', register);
+// User registration (with rate limiting and validation)
+router.post('/register', authLimiter, validateRegister, register);
 
-// Kullanıcı girişi
-router.post('/login', login);
+// User login (with rate limiting and validation)
+router.post('/login', authLimiter, validateLogin, login);
 
-// Kullanıcı araması
-router.get('/users/search', authenticateToken, searchUsers);
+// Search users and groups (with rate limiting)
+router.get('/users/search', apiLimiter, authenticateToken, searchUsers);
 
-// Kullanıcıları listele
-router.get('/users', authenticateToken, getAllUsers);  // Kullanıcıları listelemek için route
+// Get all users (with rate limiting)
+router.get('/users', apiLimiter, authenticateToken, getAllUsers);
 
-// Sohbet başlatma veya bulma
-router.post('/users/conversation', authenticateToken, createOrFindConversation);
+// Create or find conversation (with rate limiting)
+router.post('/users/conversation', apiLimiter, authenticateToken, createOrFindConversation);
 
-// Kullanıcıya ait konuşmaları al
-router.get('/users/conversations', authenticateToken, getConversations);
+// Get user conversations (with rate limiting)
+router.get('/users/conversations', apiLimiter, authenticateToken, getConversations);
 
-// Belirli bir bireysel konuşmanın mesajlarını al
-router.get('/conversations/:conversationId/messages', authenticateToken, getPrivateMessages);
+// Get private messages (with rate limiting)
+router.get('/conversations/:conversationId/messages', apiLimiter, authenticateToken, getPrivateMessages);
 
-// Bireysel konuşmada mesaj gönder
-router.post('/messages', authenticateToken, sendMessage);
+// Send message (with rate limiting and validation)
+router.post('/messages', apiLimiter, authenticateToken, validateMessage, sendMessage);
 
-// Kullanıcı gruplarını listele
-router.get('/users/groups', authenticateToken, getUserGroups);  // Kullanıcı gruplarını listelemek için route
+// Get user groups (with rate limiting)
+router.get('/users/groups', apiLimiter, authenticateToken, getUserGroups);
 
-// Belirli bir grup konuşmasının mesajlarını al
-router.get('/groups/:groupId/messages', authenticateToken, getGroupMessages);  // Grup mesajlarını almak için route
+// Get group messages (with rate limiting)
+router.get('/groups/:groupId/messages', apiLimiter, authenticateToken, getGroupMessages);
 
-// Yeni grup oluşturma rotası
-router.post('/groups', authenticateToken, createGroup);  // Yeni grup oluşturma
+// Create group (with rate limiting and validation)
+router.post('/groups', apiLimiter, authenticateToken, validateGroup, createGroup);
 
-// Belirli bir grupta mesaj gönder
-router.post('/groups/:groupId/messages', authenticateToken, sendGroupMessage);  // Grup mesajı gönderme
+// Send group message (with rate limiting and validation)
+router.post('/groups/:groupId/messages', apiLimiter, authenticateToken, validateMessage, sendGroupMessage);
 
-router.get('/call-history', authenticateToken, getCallHistory);
+// Get call history (with rate limiting)
+router.get('/call-history', apiLimiter, authenticateToken, getCallHistory);
 
 module.exports = router;
