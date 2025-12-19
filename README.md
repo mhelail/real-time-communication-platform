@@ -45,7 +45,6 @@ A modern, secure real-time chat and voice call application built with Node.js, S
 - **Security**: JWT authentication, bcrypt password hashing, Helmet.js, Rate limiting
 - **SSL/TLS**: HTTPS support with self-signed certificates
 
-
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -251,7 +250,6 @@ If you get "port already in use" errors:
 - [ ] User profiles and avatars
 - [ ] Push notifications
 - [ ] Mobile app (React Native)
-
 
 ## 🤝 Contributing
 
